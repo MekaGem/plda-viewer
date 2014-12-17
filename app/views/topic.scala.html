@@ -1,0 +1,17 @@
+@(topicName: String, coverage: String, words: Array[String], wordProbs: Array[String])
+
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+      <meta charset="UTF-8">
+      <title></title>
+    </head>
+    <body>
+        <h4>
+            Topic @topicName, coverage @coverage%
+        </h4>
+            @scala.List.range(0, words.length).map { index =>
+                @{words(index)} [@(wordProbs(index))%]
+            }
+    </body>
+</html>

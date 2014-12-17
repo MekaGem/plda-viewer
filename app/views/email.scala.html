@@ -1,0 +1,19 @@
+@(topicNames: Array[String], topicProbs: Array[String], content: String)
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h4>
+            @scala.List.range(0, topicNames.length).map { index =>
+                <a href="http://localhost:9000/topic/@topicNames(index)">
+                    Topic @{topicNames(index)} [@(topicProbs(index))%]
+                </a>
+            }
+        </h4>
+        <h4>Content:</h4>
+        <p>@Html(content)</p>
+    </body>
+</html>
