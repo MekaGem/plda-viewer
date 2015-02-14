@@ -6,13 +6,11 @@ lazy val root = (project in file(".")).enablePlugins(PlayJava)
 
 scalaVersion := "2.11.1"
 
-//libraryDependencies ++= Seq(
-//  javaJdbc,
-//  javaEbean,
-//  cache,
-//  javaWs
-//)
+libraryDependencies ++= Seq(
+  javaJdbc,
+  javaEbean,
+  cache,
+  javaWs
+)
 
-libraryDependencies += "org.mongodb" % "mongo-java-driver" % "2.12.4" withSources() withJavadoc()
-
-
+libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.34"
