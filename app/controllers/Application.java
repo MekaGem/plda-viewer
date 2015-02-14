@@ -5,8 +5,10 @@ import models.Email;
 import models.EmailTopicsMapping;
 import models.Topic;
 import play.mvc.*;
+import scala.collection.JavaConversions;
 import views.html.*;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,62 +19,29 @@ public class Application extends Controller {
 
     public static Result viewEmail(String filename) {
         Email email = Ebean.find(Email.class).where().eq(Email.nameC, filename).findUnique();
+        if (email == null) {
+            return notFound("Email with this name does not exist");
+        }
         List<EmailTopicsMapping> mapping = Ebean.find(EmailTopicsMapping.class)
-                .where().eq(EmailTopicsMapping.emailIdC, email.id).orderBy(EmailTopicsMapping.topicIdC).findList();
+                .where().eq(EmailTopicsMapping.emailIdC, email.id)
+                .orderBy().desc(EmailTopicsMapping.probabilityC).findList();
 
         List<Topic> topics = new ArrayList<>();
         for (EmailTopicsMapping map : mapping) {
             topics.add(Ebean.find(Topic.class, map.topicId));
         }
-        System.err.println(topics.size());
-        return ok(email.content);
 
-//        class TopicProb implements Comparable<TopicProb> {
-//            int topic;
-//            double prob;
-//
-//            TopicProb(int topic, double prob) {
-//                this.topic = topic;
-//                this.prob = prob;
-//            }
-//
-//            @Override
-//            public int compareTo(TopicProb o) {
-//                if (prob != o.prob) return -Double.compare(prob, o.prob);
-//                if (topic != o.topic) return Integer.compare(topic, o.topic);
-//                return 0;
-//            }
-//        }
-//        List<TopicProb> probs = new ArrayList<>();
-//        List<String> topicNames = new ArrayList<>();
-//        List<String> topicProbs = new ArrayList<>();
-//
-//        String content = "NO EMAIL WITH NAME: " + filename;
-//        if (answer != null) {
-//            content = (String) answer.get("content");
-//
-//            BasicBSONList topics = (BasicBSONList) answer.get("topics");
-//            int topicIndex = 0;
-//            double sum = 0;
-//            for (Object object : topics) {
-//                double topicProb = (Double) object;
-//                sum += topicProb;
-//                probs.add(new TopicProb(topicIndex, topicProb));
-//                topicIndex++;
-//            }
-//            Collections.sort(probs);
-//
-//            final double cf = 100.0 / sum;
-//            DecimalFormat probFormat = new DecimalFormat("00.00");
-//            for (int index = 0; index < Math.min(3, probs.size()); ++index) {
-//                topicNames.add(String.valueOf(probs.get(index).topic));
-//                topicProbs.add(probFormat.format(probs.get(index).prob * cf));
-//            }
-//        }
-//
-//        return ok(email.render(topicNames.toArray(new String[topicNames.size()]),
-//                               topicProbs.toArray(new String[topicProbs.size()]),
-//                               content));
+        List<String> formattedProbabilities = new ArrayList<>();
+        DecimalFormat format = new DecimalFormat("#.00");
+        for (EmailTopicsMapping m : mapping) {
+            formattedProbabilities.add(format.format(m.probability * 100) + "%");
+        }
+
+        return ok(views.html.email.render(
+                email,
+                JavaConversions.asScalaBuffer(mapping),
+                JavaConversions.asScalaBuffer(topics),
+                JavaConversions.asScalaBuffer(formattedProbabilities)));
     }
 //
 //    public static Result viewTopic(String topicName) {
@@ -134,10 +103,4 @@ public class Application extends Controller {
 //                               words.toArray(new String[words.size()]),
 //                               wordProbs.toArray(new String[wordProbs.size()]))));
 //    }
-
-    public static Result bstest() {
-        Email email = Ebean.find(Email.class).where().like("name", "%me%").findUnique();
-        System.err.println(email.name);
-        return(ok(bstest.render()));
-    }
 }

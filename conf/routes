@@ -4,7 +4,7 @@
 
 # Home page
 GET        /                        controllers.Application.index()
-GET /bstest controllers.Application.bstest()
+#GET        /bstest                  controllers.Application.bs()
 
 GET        /email/:filename         controllers.Application.viewEmail(filename)
 #GET        /topic/:topicName        controllers.Application.viewTopic(topicName)

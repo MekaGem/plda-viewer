@@ -1,19 +1,49 @@
-@(topicNames: Array[String], topicProbs: Array[String], content: String)
+@(
+        email: Email,
+        mapping: scala.collection.mutable.Buffer[EmailTopicsMapping],
+        topics: scala.collection.mutable.Buffer[Topic],
+        probabilities: scala.collection.mutable.Buffer[String]
+)
 
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
+<html>
+    <head lang="ru">
+        <title>Email: @email.name</title>
+        <link rel="import" href="/assets/header.html">
     </head>
     <body>
-        <h4>
-            @scala.List.range(0, topicNames.length).map { index =>
-                <a href="http://localhost:9000/topic/@topicNames(index)">
-                    Topic @{topicNames(index)} [@(topicProbs(index))%]
-                </a>
-            }
-        </h4>
-        <h4>Content:</h4>
-        <p>@Html(content)</p>
+        <div class="container">
+            <h1>Email: @email.name</h1>
+
+            <h4>Email content</h4>
+            <div class="well">
+                @Html(HtmlFormat.escape(email.content).toString.replace("\n", "<br />"))
+            </div>
+
+            <h4>Topic distribution</h4>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Topic Name</th>
+                        <th>Probability</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for(m <- (mapping zip topics) zip (probabilities zip (Stream from 1)) take 20) {
+                        <tr>
+                        @if(m._1._1.probability >= 0.05) {
+                            <tr class="success">
+                        } else {
+                            <tr class="warning">
+                        }
+                            <td>@m._2._2</td>
+                            <td>@m._1._2.name</td>
+                            <td>@m._2._1</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </body>
 </html>

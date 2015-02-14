@@ -15,4 +15,5 @@ public class EmailTopicsMapping {
     public static final String topicIdC = "topic_id";
 
     public Float probability;
+    public static final String probabilityC = "probability";
 }
