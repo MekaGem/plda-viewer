@@ -9,8 +9,10 @@ public class TopicWordsMapping {
     public Long id;
 
     public Long topicId;
+    public static final String topicIdC = "topic_id";
 
     public String word;
 
     public Float probability;
+    public static final String probabilityC = "probability";
 }

@@ -4,7 +4,9 @@ import com.avaje.ebean.Ebean;
 import models.Email;
 import models.EmailTopicsMapping;
 import models.Topic;
+import models.TopicWordsMapping;
 import play.mvc.*;
+import scala.Int;
 import scala.collection.JavaConversions;
 import views.html.*;
 
@@ -17,10 +19,10 @@ public class Application extends Controller {
         return ok(index.render("Your new application is ready."));
     }
 
-    public static Result viewEmail(String filename) {
-        Email email = Ebean.find(Email.class).where().eq(Email.nameC, filename).findUnique();
+    public static Result viewEmail(long emailId) {
+        Email email = Ebean.find(Email.class, emailId);
         if (email == null) {
-            return notFound("Email with this name does not exist");
+            return notFound("Email with this id does not exist");
         }
         List<EmailTopicsMapping> mapping = Ebean.find(EmailTopicsMapping.class)
                 .where().eq(EmailTopicsMapping.emailIdC, email.id)
@@ -32,7 +34,7 @@ public class Application extends Controller {
         }
 
         List<String> formattedProbabilities = new ArrayList<>();
-        DecimalFormat format = new DecimalFormat("#.00");
+        DecimalFormat format = new DecimalFormat("#0.00");
         for (EmailTopicsMapping m : mapping) {
             formattedProbabilities.add(format.format(m.probability * 100) + "%");
         }
@@ -42,6 +44,49 @@ public class Application extends Controller {
                 JavaConversions.asScalaBuffer(mapping),
                 JavaConversions.asScalaBuffer(topics),
                 JavaConversions.asScalaBuffer(formattedProbabilities)));
+    }
+
+    public static Result viewTopic(long topicId, int page) {
+        final int PAGE_SIZE = 20;
+
+        Topic topic = Ebean.find(Topic.class, topicId);
+        if (topic == null) {
+            return notFound("Topic with this id does not exist");
+        }
+        List<TopicWordsMapping> mapping = Ebean.find(TopicWordsMapping.class)
+                .where().eq(TopicWordsMapping.topicIdC, topicId)
+                .orderBy().desc(TopicWordsMapping.probabilityC).findList();
+
+        List<String> probabilities = new ArrayList<>();
+
+        double coverage = 0;
+        DecimalFormat format = new DecimalFormat("#0.00");
+        for (int index = 0; index < Math.min(20, mapping.size()); ++index) {
+            probabilities.add(format.format(mapping.get(index).probability * 100) + "%");
+            coverage += mapping.get(index).probability * 100;
+        }
+
+        List<EmailTopicsMapping> emailsMapping = Ebean.find(EmailTopicsMapping.class)
+                .where().eq(EmailTopicsMapping.topicIdC, topicId)
+                .orderBy().desc(EmailTopicsMapping.probabilityC)
+                .findPagingList(PAGE_SIZE).getPage(page).getList();
+
+        List<Email> emails = new ArrayList<>();
+        List<String> emailProbabilities = new ArrayList<>();
+        for (EmailTopicsMapping m : emailsMapping) {
+            emails.add(Ebean.find(Email.class, m.emailId));
+            emailProbabilities.add(format.format(m.probability * 100) + "%");
+        }
+
+        return ok(views.html.topic.render(topic
+                , JavaConversions.asScalaBuffer(mapping)
+                , JavaConversions.asScalaBuffer(probabilities)
+                , format.format(coverage) + "%"
+                , JavaConversions.asScalaBuffer(emails)
+                , JavaConversions.asScalaBuffer(emailsMapping)
+                , JavaConversions.asScalaBuffer(emailProbabilities)
+                , PAGE_SIZE * page + 1
+                , PAGE_SIZE));
     }
 //
 //    public static Result viewTopic(String topicName) {

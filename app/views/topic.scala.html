@@ -1,17 +1,72 @@
-@(topicName: String, coverage: String, words: Array[String], wordProbs: Array[String])
+@(
+    topic: Topic,
+    mapping: scala.collection.mutable.Buffer[TopicWordsMapping],
+    probabilities: scala.collection.mutable.Buffer[String],
+    coverage: String,
+    emails: scala.collection.mutable.Buffer[Email],
+    emailsMapping: scala.collection.mutable.Buffer[EmailTopicsMapping],
+    emailProbabilities: scala.collection.mutable.Buffer[String],
+    startFrom: Int,
+    pageSize: Int
+)
 
 <!DOCTYPE html>
 <html>
-    <head lang="en">
-      <meta charset="UTF-8">
-      <title></title>
-    </head>
-    <body>
-        <h4>
-            Topic @topicName, coverage @coverage%
-        </h4>
-            @scala.List.range(0, words.length).map { index =>
-                @{words(index)} [@(wordProbs(index))%]
+<head lang="ru">
+    <title>Topic: @topic.name</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/stylesheets/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>Topic: @topic.name</h1>
+
+    <h4>Emails for topic:</h4>
+    <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+            <th>№</th>
+            <th>Email</th>
+            <th>Probability</th>
+        </tr>
+        </thead>
+        <tbody>
+            @for(m <- ((emailProbabilities zip emails) zip (Stream from startFrom)) take pageSize) {
+                <tr>
+                    <td>@m._2</td>
+                    <td><a href="/email/@m._1._2.id">@m._1._2.name</a></td>
+                    <td>@m._1._1</td>
+                </tr>
             }
-    </body>
+        </tbody>
+    </table>
+
+    <h4>Topic distribution: coverage(by 20) is @coverage</h4>
+    <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+            <th>№</th>
+            <th>Word</th>
+            <th>Probability</th>
+        </tr>
+        </thead>
+        <tbody>
+        @for(m <- ((mapping zip probabilities) zip (Stream from startFrom)) take 100) {
+            @if(m._1._1.probability >= 0.01) {
+                <tr class="success">
+            } else {
+                <tr class="warning">
+            }
+                <td>@m._2</td>
+                <td>@m._1._1.word</td>
+                <td>@m._1._2</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+</body>
 </html>
