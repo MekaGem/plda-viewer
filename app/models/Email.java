@@ -1,9 +1,9 @@
 package models;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Lob;
+import play.db.ebean.Model;
+
+import javax.persistence.*;
+import java.util.List;
 
 @Entity
 public class Email {
@@ -11,8 +11,14 @@ public class Email {
     public Long id;
 
     public String name;
-    public static final String nameC = "name";
 
     @Column(columnDefinition = "MEDIUMTEXT")
     public String content;
+
+    @OneToMany(mappedBy = "email")
+    public List<EmailTopicsMapping> emailTopicsMappings;
+
+    public static Model.Finder<Integer, Email> find = new Model.Finder<>(
+            Integer.class, Email.class
+    );
 }
