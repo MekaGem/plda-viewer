@@ -68,7 +68,7 @@ public class Application extends Controller {
         List<Email> emails = new ArrayList<>();
         List<String> emailProbabilities = new ArrayList<>();
         for (EmailTopicsMapping mapping : emailMappings) {
-            emails.add(Ebean.find(Email.class, mapping.email));
+            emails.add(mapping.email);
             emailProbabilities.add(format.format(mapping.probability * 100) + "%");
         }
 
