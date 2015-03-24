@@ -12,6 +12,7 @@ import views.html.*;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Application extends Controller {
     public static Result index() {
@@ -26,16 +27,14 @@ public class Application extends Controller {
         List<EmailTopicsMapping> mappings = email.emailTopicsMappings;
         mappings.sort(EmailTopicsMapping.probabilityComparator);
 
-        List<Topic> topics = new ArrayList<>();
-        for (EmailTopicsMapping mapping : mappings) {
-            topics.add(mapping.topic);
-        }
+        List<Topic> topics = mappings.stream()
+                .map(mapping -> mapping.topic)
+                .collect(Collectors.toList());
 
-        List<String> formattedProbabilities = new ArrayList<>();
         DecimalFormat format = new DecimalFormat("#0.00");
-        for (EmailTopicsMapping mapping : mappings) {
-            formattedProbabilities.add(format.format(mapping.probability * 100) + "%");
-        }
+        List<String> formattedProbabilities = mappings.stream()
+                .map(mapping -> format.format(mapping.probability * 100) + "%")
+                .collect(Collectors.toList());
 
         return ok(views.html.email.render(
                 email,
@@ -44,8 +43,14 @@ public class Application extends Controller {
                 JavaConversions.asScalaBuffer(formattedProbabilities)));
     }
 
-    public static Result viewTopic(long topicId, int page) {
-        final int PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 20;
+
+    public static Result viewTopic(long topicId, int pageNumber, int pageSize) {
+        pageNumber = Math.max(0, pageNumber - 1);
+        if (pageSize < 1) {
+            pageSize = DEFAULT_PAGE_SIZE;
+        }
+
         Topic topic = Ebean.find(Topic.class, topicId);
         if (topic == null) {
             return notFound("Topic with this id does not exist");
@@ -64,6 +69,7 @@ public class Application extends Controller {
 
         List<EmailTopicsMapping> emailMappings = topic.emailTopicsMappings;
         emailMappings.sort(EmailTopicsMapping.probabilityComparator);
+        emailMappings = emailMappings.subList(pageNumber * pageSize, (pageNumber + 1) * pageSize);
 
         List<Email> emails = new ArrayList<>();
         List<String> emailProbabilities = new ArrayList<>();
@@ -79,67 +85,16 @@ public class Application extends Controller {
                 , JavaConversions.asScalaBuffer(emails)
                 , JavaConversions.asScalaBuffer(emailMappings)
                 , JavaConversions.asScalaBuffer(emailProbabilities)
-                , PAGE_SIZE * page + 1
-                , PAGE_SIZE));
+                , pageSize * pageNumber + 1
+                , pageSize));
     }
-//
-//    public static Result viewTopic(String topicName) {
-//        MongoClient client = getMongoClient();
-//        DB db = client.getDB("plda");
-//        DBCollection topics = db.getCollection("topics");
-//
-//        BasicDBObject query = new BasicDBObject("name", topicName);
-//        DBObject answer = null;
-//        try (Cursor cursor = topics.find(query)) {
-//            if (cursor.hasNext()) {
-//                answer = cursor.next();
-//            }
-//        }
-//
-//        class WordProb implements Comparable<WordProb> {
-//            String word;
-//            double prob;
-//
-//            WordProb(String word, double prob) {
-//                this.word = word;
-//                this.prob = prob;
-//            }
-//
-//            @Override
-//            public int compareTo(WordProb o) {
-//                if (prob != o.prob) return -Double.compare(prob, o.prob);
-//                if (!word.equals(o.word)) return word.compareTo(o.word);
-//                return 0;
-//            }
-//        }
-//
-//        List<WordProb> probs = new ArrayList<>();
-//        List<String> words = new ArrayList<>();
-//        List<String> wordProbs = new ArrayList<>();
-//        double coverage = 0;
-//        if (answer != null) {
-//            double total = (Double) answer.get("total");
-//            List<Object> wordsArray = (BasicBSONList) answer.get("words");
-//
-//            for (Object wordInfo : wordsArray) {
-//                BasicBSONObject info = (BasicBSONObject) wordInfo;
-//                String word = (String) info.get("word");
-//                double prob = (Double) info.get("prob");
-//                probs.add(new WordProb(word, prob));
-//            }
-//            Collections.sort(probs);
-//
-//            final double cf = 100.0 / total;
-//            DecimalFormat probFormat = new DecimalFormat("00.00");
-//            for (int index = 0; index < Math.min(100, probs.size()); ++index) {
-//                words.add(String.valueOf(probs.get(index).word));
-//                wordProbs.add(probFormat.format(probs.get(index).prob * cf));
-//                coverage += probs.get(index).prob * cf;
-//            }
-//        }
-//
-//        return(ok(topic.render(topicName, new DecimalFormat("00").format(coverage),
-//                               words.toArray(new String[words.size()]),
-//                               wordProbs.toArray(new String[wordProbs.size()]))));
-//    }
+
+    public static Result initTopicNames() {
+        List<Topic> topics = Ebean.find(Topic.class).findList();
+        for (Topic topic : topics) {
+            topic.name = String.valueOf(topic.id);
+            Ebean.update(topic);
+        }
+        return ok();
+    }
 }
